@@ -1,19 +1,52 @@
-import { useState, useEffect } from 'react'
-import './App.css'
-import useApi from './hooks/useApi'
+import React, { Fragment, useState } from 'react';
+
+import { useDataApi } from './hooks/useApi'
+
+
+
 
 
 function App() {
-  const [data, setQuery] = useApi()
+  const [query, setQuery] = useState('redux');
+  const [{ data, isLoading, isError }, doFetch] = useDataApi(
+    'https://hn.algolia.com/api/v1/search?query=redux',
+    { hits: [] },
+  );
 
   return (
-    <div className="App">
-      {
-        data.map((item: number, index: number) => <div key={index}>{ item }</div>)
-      }
-      <input type="text" placeholder='请输入内容' onChange={(e) => setQuery(e.target.value)} />
-    </div>
-  )
+    <Fragment>
+      <form
+        onSubmit={event => {
+          doFetch(
+            `http://hn.algolia.com/api/v1/search?query=${query}`,
+          );
+
+          event.preventDefault();
+        }}
+      >
+        <input
+          type="text"
+          value={query}
+          onChange={event => setQuery(event.target.value)}
+        />
+        <button type="submit">Search</button>
+      </form>
+
+      {isError && <div>Something went wrong ...</div>}
+
+      {isLoading ? (
+        <div>Loading ...</div>
+      ) : (
+        <ul>
+          {data.hits.map((item: any) => (
+            <li key={item.objectID}>
+              <a href={item.url}>{item.title}</a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Fragment>
+  );
 }
 
-export default App
+export default App;

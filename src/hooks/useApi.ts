@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useReducer } from 'react'
+import axios from 'axios'
 
 type GetData = (query: string) => Promise<number[]>
 type UseApi = () => [number[], any]
@@ -12,7 +13,7 @@ const getList: GetData = (query) => {
   })
 }
 
-const useApi: UseApi = () => {
+export const useApi: UseApi = () => {
   const [data, setData] = useState([1, 2, 3, 4, 5])
   const [query, setQuery] = useState('')
 
@@ -26,4 +27,61 @@ const useApi: UseApi = () => {
   return [ data, setQuery ]
 }
 
-export default useApi
+
+const dataFetchReducer = (state, action) => {
+  switch (action.type) {
+    case 'FETCH_INIT':
+      return { 
+        ...state,
+        isLoading: true,
+        isError: false
+      };
+    case 'FETCH_SUCCESS':
+      return {
+        ...state,
+        isError:false,
+        isLoading: false,
+        data: action.payload
+      };
+    case 'FETCH_FAILURE':
+      return { 
+        ...state,
+        isLoading: false,
+        isError: true
+      };
+    default:
+      throw new Error()
+  }
+}
+
+export const useDataApi: any = (initialUrl: string, initialData: { hits: [] }) => {
+  const [url, setUrl] = useState(initialUrl);
+  const [state, dispatch] = useReducer(dataFetchReducer, {
+    isLoading: false,
+    isError: false,
+    data: initialData
+  })
+  useEffect(() => {
+    let didCancel = false;
+    const fetchData = async () => {
+      dispatch({ type: 'FETCH_INIT' })
+      try {
+        const result = await axios(url);
+        if (!didCancel) {
+          dispatch({ type: 'FETCH_SUCCESS', payload: result.data })
+        }
+      } catch (error) {
+        if (!didCancel) {
+          dispatch({ type: 'FETCH_FAILURE' })
+        }
+      }
+    };
+
+    fetchData();
+    return () => {
+      didCancel = true
+    }
+  }, [url]);
+
+  return [state, setUrl];
+};
