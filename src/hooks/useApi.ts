@@ -28,7 +28,7 @@ export const useApi: UseApi = () => {
 }
 
 
-const dataFetchReducer = (state, action) => {
+const dataFetchReducer = (state: any, action: { type: string; payload?: any }) => {
   switch (action.type) {
     case 'FETCH_INIT':
       return { 
